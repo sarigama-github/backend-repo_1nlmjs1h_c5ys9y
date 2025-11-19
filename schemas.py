@@ -13,6 +13,7 @@ Model name is converted to lowercase for the collection name:
 
 from pydantic import BaseModel, Field
 from typing import Optional
+from datetime import date
 
 # Example schemas (replace with your own):
 
@@ -37,6 +38,33 @@ class Product(BaseModel):
     price: float = Field(..., ge=0, description="Price in dollars")
     category: str = Field(..., description="Product category")
     in_stock: bool = Field(True, description="Whether product is in stock")
+
+# North Indian Restaurant Schemas
+
+class Dish(BaseModel):
+    """
+    Menu dishes collection
+    Collection name: "dish"
+    """
+    name: str = Field(..., description="Dish name")
+    description: Optional[str] = Field(None, description="Short description of the dish")
+    price: float = Field(..., ge=0, description="Price in local currency")
+    category: str = Field(..., description="Category like Curry, Tandoor, Breads, Sweets, Beverages")
+    spicy_level: Optional[int] = Field(None, ge=0, le=5, description="Spice level from 0-5")
+    vegetarian: bool = Field(False, description="Is this dish vegetarian")
+    image: Optional[str] = Field(None, description="Public image URL")
+
+class Reservation(BaseModel):
+    """
+    Reservations collection
+    Collection name: "reservation"
+    """
+    name: str = Field(..., description="Guest name")
+    phone: str = Field(..., description="Contact phone number")
+    party_size: int = Field(..., ge=1, le=20, description="Number of guests")
+    date: date = Field(..., description="Reservation date")
+    time: str = Field(..., description="Reservation time, e.g., 19:30")
+    special_requests: Optional[str] = Field(None, description="Any special notes")
 
 # Add your own schemas here:
 # --------------------------------------------------

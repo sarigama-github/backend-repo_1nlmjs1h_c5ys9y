@@ -21,15 +21,27 @@ db = None
 database_url = os.getenv("DATABASE_URL")
 database_name = os.getenv("DATABASE_NAME")
 
+# Initialize client safely so the API can still start even if DB isn't available
 if database_url and database_name:
-    _client = MongoClient(database_url)
-    db = _client[database_name]
+    try:
+        _client = MongoClient(database_url)
+        db = _client[database_name]
+    except Exception as e:
+        # Failed to initialize database (e.g., missing dnspython for mongodb+srv, DNS issues, etc.)
+        # Defer raising until an operation is attempted so the server can start.
+        db = None
+        os.environ["DB_INIT_ERROR"] = str(e)
 
 # Helper functions for common database operations
+
 def create_document(collection_name: str, data: Union[BaseModel, dict]):
     """Insert a single document with timestamp"""
     if db is None:
-        raise Exception("Database not available. Check DATABASE_URL and DATABASE_NAME environment variables.")
+        init_error = os.getenv("DB_INIT_ERROR")
+        raise Exception(
+            "Database not available. Check DATABASE_URL and DATABASE_NAME environment variables."
+            + (f" Init error: {init_error}" if init_error else "")
+        )
 
     # Convert Pydantic model to dict if needed
     if isinstance(data, BaseModel):
@@ -43,10 +55,15 @@ def create_document(collection_name: str, data: Union[BaseModel, dict]):
     result = db[collection_name].insert_one(data_dict)
     return str(result.inserted_id)
 
+
 def get_documents(collection_name: str, filter_dict: dict = None, limit: int = None):
     """Get documents from collection"""
     if db is None:
-        raise Exception("Database not available. Check DATABASE_URL and DATABASE_NAME environment variables.")
+        init_error = os.getenv("DB_INIT_ERROR")
+        raise Exception(
+            "Database not available. Check DATABASE_URL and DATABASE_NAME environment variables."
+            + (f" Init error: {init_error}" if init_error else "")
+        )
     
     cursor = db[collection_name].find(filter_dict or {})
     if limit:
